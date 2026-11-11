@@ -1,0 +1,137 @@
+/* University of Oklahoma — Workshop Stylesheet */
+
+:root {
+  /* OU Crimson and Cream */
+  --ou-crimson: #841617;
+  --ou-crimson-dark: #5c0f10;
+  --ou-crimson-light: #a62022;
+  --ou-cream: #FFF1C9;
+  --ou-cream-dark: #f0e0b0;
+  
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #555;
+  --accent: var(--ou-crimson);
+  --accent-hover: var(--ou-crimson-dark);
+  --accent-light: var(--ou-crimson-light);
+  --card-bg: #fff;
+  --border: #e8dcc8;
+  --code-bg: #faf6ed;
+  --header-bg: var(--ou-crimson);
+  --header-fg: #fff;
+  --nav-bg: var(--ou-cream);
+  --nav-border: #e8dcc8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1516;
+    --fg: #f5f0e8;
+    --muted: #b8a898;
+    --accent: #c94c4c;
+    --accent-hover: #e07070;
+    --accent-light: #d96060;
+    --card-bg: #231e1e;
+    --border: #4a3d3d;
+    --code-bg: #2d2525;
+    --header-bg: #5c0f10;
+    --header-fg: #fff;
+    --nav-bg: #2d2520;
+    --nav-border: #4a3d3d;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+line-height: 1.6;
+color: var(--fg);
+background: var(--bg);
+max-width: 900px;
+margin: 0 auto;
+padding: 0 1rem 3rem;
+}
+
+header {
+background: var(--header-bg);
+color: var(--header-fg);
+padding: 2.5rem 1rem;
+margin: 0 -1rem 2rem;
+text-align: center;
+}
+
+header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+header .subtitle { font-size: 1.1rem; opacity: 0.9; font-weight: 300; }
+
+nav {
+background: var(--nav-bg);
+border-bottom: 1px solid var(--nav-border);
+padding: 0.75rem 1rem;
+margin: 0 -1rem 2rem;
+position: sticky;
+top: 0;
+z-index: 10;
+}
+
+nav ul { display: flex; gap: 1.5rem; list-style: none; flex-wrap: wrap; justify-content: center; }
+nav a { color: var(--fg); text-decoration: none; font-weight: 500; padding: 0.25rem 0.5rem; border-radius: 4px; transition: background 0.2s; }
+nav a:hover { background: var(--border); }
+nav a.active { color: var(--accent); background: var(--card-bg); }
+
+main section { margin-bottom: 3rem; }
+main h2 { font-size: 1.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+main h3 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
+main p { margin-bottom: 1rem; }
+main a { color: var(--accent); text-decoration: none; }
+main a:hover { text-decoration: underline; }
+main ul { margin: 1rem 0 1rem 1.5rem; }
+main li { margin-bottom: 0.5rem; }
+
+.hero { text-align: center; max-width: 700px; margin: 0 auto 3rem; }
+.hero p { font-size: 1.1rem; color: var(--muted); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
+.cards article { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; transition: box-shadow 0.2s, transform 0.2s; }
+.cards article:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
+.cards h3 { margin-top: 0; font-size: 1.1rem; }
+.cards a { font-weight: 600; }
+
+.prerequisites ul, .resources ul { list-style: disc; }
+
+code { background: var(--code-bg); padding: 0.15rem 0.4rem; border-radius: 3px; font-family: "SF Mono", "Fira Code", "Monaco", monospace; font-size: 0.9em; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; margin: 1rem 0; }
+pre code { background: none; padding: 0; font-size: 0.9rem; line-height: 1.5; }
+
+.cmd { display: block; font-family: "SF Mono", "Fira Code", "Monaco", monospace; background: var(--code-bg); padding: 0.5rem 1rem; margin: 0.5rem 0; border-radius: 4px; border-left: 3px solid var(--accent); }
+
+footer { text-align: center; color: var(--muted); font-size: 0.9rem; padding-top: 2rem; border-top: 1px solid var(--border); margin-top: 2rem; }
+
+/* Lesson page specific */
+.lesson-header { margin-bottom: 2rem; }
+.lesson-header h1 { font-size: 2rem; }
+.lesson-header .meta { color: var(--muted); margin-top: 0.5rem; }
+
+.lesson-nav { display: flex; justify-content: space-between; margin: 2rem 0; padding: 1rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.lesson-nav a { color: var(--accent); font-weight: 500; }
+
+.objectives { background: var(--card-bg); border: 1px solid var(--border); border-left: 4px solid var(--ou-crimson); border-radius: 0 8px 8px 0; padding: 1rem 1.5rem; margin: 1.5rem 0; }
+.objectives h3 { margin-top: 0; color: var(--ou-crimson); }
+.objectives ul { margin-bottom: 0; }
+
+.key-point { background: var(--ou-cream); border-left: 4px solid var(--ou-crimson); padding: 1rem 1.5rem; margin: 1.5rem 0; border-radius: 0 6px 6px 0; }
+@media (prefers-color-scheme: dark) { .key-point { background: #2d2520; border-left-color: var(--ou-crimson-light); } }
+.key-point strong { color: var(--ou-crimson); }
+
+.warning { background: #fff0f0; border-left: 4px solid var(--ou-crimson); padding: 1rem 1.5rem; margin: 1.5rem 0; border-radius: 0 6px 6px 0; }
+@media (prefers-color-scheme: dark) { .warning { background: #2d1e1e; border-left-color: var(--ou-crimson-light); } }
+.warning strong { color: var(--ou-crimson); }
+
+/* Socratic question styling */
+.socratic { background: var(--card-bg); border: 2px solid var(--accent); border-radius: 8px; padding: 1.5rem; margin: 2rem 0; }
+.socratic h4 { color: var(--accent); margin-bottom: 0.5rem; }
+.socratic p { margin: 0; }
+.socratic .answer { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); display: none; }
+.socratic .answer.show { display: block; }
+.socratic button { background: var(--ou-crimson); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-top: 1rem; font-weight: 500; }
+.socratic button:hover { background: var(--ou-crimson-dark); }

@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Practical Examples — Python in PyMOL</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<h1>Python in PyMOL</h1>
+<p class="subtitle">An introductory guide to scripting molecular graphics</p>
+</header>
+
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="lesson1.html">Lesson 1: The Prompt</a></li>
+<li><a href="lesson2.html">Lesson 2: Basic Commands</a></li>
+<li><a href="lesson3.html">Lesson 3: Scripting Basics</a></li>
+<li><a href="lesson4.html" class="active">Lesson 4: Practical Examples</a></li>
+</ul>
+</nav>
+
+<main>
+<div class="lesson-header">
+<h1>Lesson 4: Practical Examples</h1>
+<p class="meta">Real-world workflows combining everything you've learned</p>
+</div>
+
+<div class="lesson-nav">
+<a href="lesson3.html">← Lesson 3: Scripting Basics</a>
+<a href="index.html">Home →</a>
+</div>
+
+<section class="objectives">
+<h3>Learning Objectives</h3>
+<ul>
+<li>Build a batch rendering pipeline for publication figures</li>
+<li>Write a measurement/analysis script for distances and angles</li>
+<li>Create a trajectory animation from MD simulation data</li>
+<li>Generate a multi-panel figure with consistent styling</li>
+</ul>
+</section>
+
+<section>
+<h2>Example 1: Publication Figure Pipeline</h2>
+<p>Render multiple structures with consistent style for a paper figure.</p>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+render_figure.py — Batch render structures for publication
+Usage: pymol -c render_figure.py --pdbs 1ubq 2ubq 3ubq --outdir figures
+"""
+
+from pymol import cmd
+import argparse
+import os
+
+# ---- Configuration ----
+STYLE_CONFIG = {
+    "representation": "cartoon",
+    "color_scheme": "chain",      # "chain", "spectrum", "element", or hex color
+    "background": "white",
+    "width": 1200,
+    "height": 1200,
+    "dpi": 300,
+    "ray": True,
+    "transparent_bg": False,
+}
+
+def apply_style(obj_name, config):
+    """Apply consistent styling to an object."""
+    # Representation
+    if config["representation"] == "cartoon":
+        cmd.cartoon(obj_name)
+    elif config["representation"] == "sticks":
+        cmd.show("sticks", obj_name)
+    elif config["representation"] == "surface":
+        cmd.show("surface", obj_name)
+        cmd.set("transparency", 0.3, obj_name)
+    
+    # Coloring
+    scheme = config["color_scheme"]
+    if scheme == "chain":
+        cmd.util.cbc(obj_name)
+    elif scheme == "spectrum":
+        cmd.spectrum("b", "rainbow", obj_name)
+    elif scheme == "element":
+        cmd.util.cba(obj_name)  # color by atom
+    elif scheme.startswith("#"):
+        cmd.set_color("custom", [int(scheme[i:i+2],16)/255 for i in (1,3,5)])
+        cmd.color("custom", obj_name)
+    else:
+        cmd.color(scheme, obj_name)
+    
+    # Background
+    cmd.bg_color(config["background"])
+    if config["transparent_bg"]:
+        cmd.set("ray_opaque_background", 0)
+
+def render_structure(pdb_id, outdir, config):
+    """Fetch, style, and render one structure."""
+    obj = pdb_id.lower()
+    outfile = os.path.join(outdir, f"{obj}.png")
+    
+    print(f"Processing {pdb_id}...")
+    cmd.fetch(pdb_id, obj)
+    apply_style(obj, config)
+    cmd.orient(obj)
+    cmd.png(outfile, width=config["width"], height=config["height"],
+            dpi=config["dpi"], ray=1 if config["ray"] else 0)
+    cmd.delete(obj)
+    print(f"  Saved: {outfile}")
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pdbs", nargs="+", required=True, help="PDB IDs")
+    parser.add_argument("--outdir", default="figures", help="Output directory")
+    parser.add_argument("--style", choices=["cartoon", "sticks", "surface"], 
+                        default=STYLE_CONFIG["representation"])
+    parser.add_argument("--color", default=STYLE_CONFIG["color_scheme"])
+    parser.add_argument("--width", type=int, default=STYLE_CONFIG["width"])
+    parser.add_argument("--height", type=int, default=STYLE_CONFIG["height"])
+    args = parser.parse_args()
+    
+    os.makedirs(args.outdir, exist_ok=True)
+    
+    config = STYLE_CONFIG.copy()
+    config.update({"representation": args.style, "color_scheme": args.color,
+                   "width": args.width, "height": args.height})
+    
+    for pdb in args.pdbs:
+        try:
+            render_structure(pdb, args.outdir, config)
+        except Exception as e:
+            print(f"  ERROR on {pdb}: {e}")
+    
+    print(f"\nDone! Figures in {args.outdir}/")
+
+if __name__ == "__main__":
+    main()</code></pre>
+</section>
+
+<section>
+<h2>Example 2: Distance & Angle Measurements</h2>
+<p>Automate geometric analysis of a structure.</p>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+measure.py — Measure distances, angles, dihedrals in a structure
+Usage: pymol -c measure.py --pdb 1ubq --selection "chain A and resi 10-20"
+"""
+
+from pymol import cmd
+import argparse
+import json
+
+def measure_distance(sel1, sel2, name=None):
+    """Measure distance between two selections."""
+    if name is None:
+        name = f"dist_{sel1}_{sel2}".replace(" ", "_")
+    d = cmd.distance(name, sel1, sel2)
+    return {"name": name, "type": "distance", "value": d, "selection1": sel1, "selection2": sel2}
+
+<div class="socratic" data-question="measure-1">
+<h4>Check Your Understanding</h4>
+<p>What's the difference between <code>cmd.distance()</code> and <code>cmd.get_distance()</code>?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> distance() creates a visible distance measurement object in the scene (with labels, dashes) and returns the value. get_distance() only returns the numeric value without creating any visual object.</p>
+<p><strong>Misconceptions:</strong> "get_distance() is faster because it doesn't create objects." "distance() only works with named selections." "They return different values for the same atoms."</p>
+</div>
+</div>
+
+def measure_angle(sel1, sel2, sel3, name=None):
+    """Measure angle between three selections (sel2 is vertex)."""
+    if name is None:
+        name = f"angle_{sel1}_{sel2}_{sel3}".replace(" ", "_")
+    a = cmd.get_angle(sel1, sel2, sel3)
+    return {"name": name, "type": "angle", "value": a, "selections": [sel1, sel2, sel3]}
+
+<div class="socratic" data-question="measure-2">
+<h4>Check Your Understanding</h4>
+<p>For <code>cmd.get_angle(sel1, sel2, sel3)</code>, which selection is the vertex?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> sel2 is the vertex — the angle is measured between vectors sel2→sel1 and sel2→sel3.</p>
+<p><strong>Misconceptions:</strong> "sel1 is the vertex (first argument)." "The order doesn't matter; angle is symmetric." "sel3 is the vertex (last argument)."</p>
+</div>
+</div>
+
+def measure_dihedral(sel1, sel2, sel3, sel4, name=None):
+    """Measure dihedral angle between four selections."""
+    if name is None:
+        name = f"dihedral_{sel1}_{sel2}_{sel3}_{sel4}".replace(" ", "_")
+    d = cmd.get_dihedral(sel1, sel2, sel3, sel4)
+    return {"name": name, "type": "dihedral", "value": d, "selections": [sel1, sel2, sel3, sel4]}
+
+def analyze_contacts(obj, cutoff=4.0):
+    """Find all atom pairs within cutoff distance."""
+    # Create a selection of close contacts
+    cmd.select("close_pairs", f"({obj}) around {cutoff}")
+    # This is a simplified example; full contact analysis needs more work
+    n = cmd.count_atoms("close_pairs")
+    return {"contacts_within_cutoff": n, "cutoff_A": cutoff}
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pdb", required=True)
+    parser.add_argument("--selection", default="all")
+    parser.add_argument("--output", default="measurements.json")
+    args = parser.parse_args()
+    
+    obj = args.pdb.lower()
+    cmd.fetch(args.pdb, obj)
+    
+    results = []
+    
+    # Example: measure CA distances in a helix
+    # Helix typically residues 10-20 in 1ubq
+    results.append(measure_distance(f"{obj} and resi 10 and name CA",
+                                    f"{obj} and resi 20 and name CA",
+                                    "helix_ends_CA"))
+    
+    # Angle: three consecutive CA atoms
+    results.append(measure_angle(f"{obj} and resi 10 and name CA",
+                                 f"{obj} and resi 11 and name CA",
+                                 f"{obj} and resi 12 and name CA",
+                                 "helix_angle_10_11_12"))
+    
+    # Dihedral: four consecutive CA atoms
+    results.append(measure_dihedral(f"{obj} and resi 10 and name CA",
+                                    f"{obj} and resi 11 and name CA",
+                                    f"{obj} and resi 12 and name CA",
+                                    f"{obj} and resi 13 and name CA",
+                                    "helix_dihedral_10_13"))
+    
+    # Contact analysis
+    results.append(analyze_contacts(obj, cutoff=4.0))
+    
+    # Save
+    with open(args.output, "w") as f:
+        json.dump(results, f, indent=2)
+    
+    print(f"Measurements saved to {args.output}")
+    for r in results:
+        if "value" in r:
+            print(f"  {r['name']}: {r['value']:.3f} {'Å' if r['type']=='distance' else '°'}")
+
+if __name__ == "__main__":
+    main()</code></pre>
+</section>
+
+<section>
+<h2>Example 3: Trajectory Animation</h2>
+<p>Create a movie from an MD simulation trajectory.</p>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+animate_trajectory.py — Create movie from MD trajectory
+Usage: pymol -c animate_trajectory.py --topology protein.pdb --trajectory traj.xtc --output movie.mp4
+"""
+
+from pymol import cmd
+import argparse
+import os
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--topology", required=True, help="Reference PDB/GRO file")
+    parser.add_argument("--trajectory", required=True, help="Trajectory file (XTC, DCD, TRR)")
+    parser.add_argument("--output", default="movie.mp4", help="Output movie file")
+    parser.add_argument("--fps", type=int, default=30, help="Frames per second")
+    parser.add_argument("--width", type=int, default=1920)
+    parser.add_argument("--height", type=int, default=1080)
+    parser.add_argument("--selection", default="protein", help="Selection to show")
+    parser.add_argument("--style", choices=["cartoon", "surface", "sticks"], default="cartoon")
+    parser.add_argument("--color", default="chain")
+    parser.add_argument("--ray", action="store_true", help="Ray trace each frame (slow)")
+    args = parser.parse_args()
+    
+    # Load topology first
+    cmd.load(args.topology, "protein")
+    
+    # Load trajectory (state=0 appends all frames)
+    print(f"Loading trajectory: {args.trajectory}")
+    cmd.load(args.trajectory, "protein", state=0)
+    
+    n_frames = cmd.count_states("protein")
+    print(f"Loaded {n_frames} frames")
+    
+    # Style
+    if args.style == "cartoon":
+        cmd.cartoon("protein")
+    elif args.style == "surface":
+        cmd.show("surface", "protein")
+        cmd.set("transparency", 0.3)
+    elif args.style == "sticks":
+        cmd.show("sticks", "protein")
+    
+    if args.color == "chain":
+        cmd.util.cbc("protein")
+    elif args.color == "spectrum":
+        cmd.spectrum("b", "rainbow", "protein")
+    else:
+        cmd.color(args.color, "protein")
+    
+    # Hide selection if specified
+    if args.selection != "protein":
+        cmd.hide("everything", "protein")
+        cmd.show(args.style, args.selection)
+    
+    cmd.bg_color("white")
+    cmd.orient(args.selection)
+    
+    # Movie setup
+    cmd.mset(f"1 x{n_frames}")  # 1..n_frames
+    cmd.mplay()  # starts movie mode
+    
+    <div class="socratic" data-question="anim-1">
+<h4>Check Your Understanding</h4>
+<p>In the trajectory animation script, why load the topology first, then the trajectory with <code>state=0</code>?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> The topology (PDB/GRO) defines the atom order and connectivity. Loading the trajectory with state=0 appends all frames as additional states to the same object. Loading trajectory first would lack connectivity info.</p>
+<p><strong>Misconceptions:</strong> "state=0 means 'don't load any states'." "You can load trajectory without topology." "The order doesn't matter."</p>
+</div>
+</div>
+
+<div class="socratic" data-question="anim-2">
+<h4>Check Your Understanding</h4>
+<p>What does <code>cmd.mset("1 x100")</code> do?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> Sets up a movie with 100 frames, each showing state 1 through 100 in sequence. The syntax "1 x100" means "start at state 1, repeat for 100 frames."</p>
+<p><strong>Misconceptions:</strong> "It creates 100 copies of the object." "x means 'multiply frames by 100'." "It only works with ray-traced frames."</p>
+</div>
+</div>
+
+    # Render frames
+    frame_dir = "frames"
+    os.makedirs(frame_dir, exist_ok=True)
+    
+    print("Rendering frames...")
+    for i in range(1, n_frames + 1):
+        cmd.frame(i)
+        cmd.refresh()
+        outfile = os.path.join(frame_dir, f"frame_{i:05d}.png")
+        cmd.png(outfile, width=args.width, height=args.height, ray=1 if args.ray else 0)
+        if i % 50 == 0:
+            print(f"  {i}/{n_frames} frames rendered")
+    
+    print("Frames rendered. Creating movie with ffmpeg...")
+    
+    # Use ffmpeg to create movie
+    import subprocess
+    ffmpeg_cmd = [
+        "ffmpeg", "-y", "-framerate", str(args.fps),
+        "-i", os.path.join(frame_dir, "frame_%05d.png"),
+        "-c:v", "libx264", "-pix_fmt", "yuv420p",
+        "-crf", "18", args.output
+    ]
+    try:
+        subprocess.run(ffmpeg_cmd, check=True)
+        print(f"Movie saved: {args.output}")
+    except subprocess.CalledProcessError:
+        print("ffmpeg failed. Frames saved in frames/ directory.")
+        print("Run manually: ffmpeg -framerate 30 -i frames/frame_%05d.png -c:v libx264 movie.mp4")
+    
+    cmd.mstop()
+
+if __name__ == "__main__":
+    main()</code></pre>
+</section>
+
+<section>
+<h2>Example 4: Multi-Panel Figure</h2>
+<p>Generate a figure with multiple views of the same structure.</p>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+multipanel.py — Generate multi-panel figure from one structure
+Usage: pymol -c multipanel.py --pdb 1ubq --output figure.png
+"""
+
+from pymol import cmd
+import argparse
+import os
+
+PANELS = [
+    # (name, description, view_matrix_or_function)
+    ("overview", "Full structure", lambda: cmd.orient("all")),
+    ("active_site", "Active site close-up", lambda: cmd.zoom("resi 10-20", 5)),
+    ("ligand", "Ligand binding pocket", lambda: cmd.zoom("hetero", 8)),
+    ("secondary", "Secondary structure", lambda: cmd.orient("all")),  # same view, diff style
+]
+
+STYLES = [
+    ("cartoon_chain", {"rep": "cartoon", "color": "chain"}),
+    ("cartoon_ss", {"rep": "cartoon", "color": "ss"}),
+    ("surface_chain", {"rep": "surface", "color": "chain", "transparency": 0.3}),
+    ("sticks_ligand", {"rep": "sticks", "color": "element", "sel": "hetero"}),
+]
+
+def apply_style(config):
+    """Apply a style configuration."""
+    sel = config.get("sel", "all")
+    rep = config["rep"]
+    color = config["color"]
+    
+    cmd.hide("everything", "all")
+    
+    if rep == "cartoon":
+        cmd.cartoon(sel)
+    elif rep == "surface":
+        cmd.show("surface", sel)
+        if "transparency" in config:
+            cmd.set("transparency", config["transparency"], sel)
+    elif rep == "sticks":
+        cmd.show("sticks", sel)
+    
+    if color == "chain":
+        cmd.util.cbc(sel)
+    elif color == "ss":
+        cmd.util.cbs(sel)
+    elif color == "element":
+        cmd.util.cba(sel)
+    else:
+        cmd.color(color, sel)
+
+def render_panel(obj, panel_name, view_func, style_name, style_config, outdir, w=600, h=600):
+    """Render one panel."""
+    view_func()
+    apply_style(style_config)
+    cmd.refresh()
+    outfile = os.path.join(outdir, f"{panel_name}_{style_name}.png")
+    cmd.png(outfile, width=w, height=h, dpi=150, ray=1)
+    return outfile
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pdb", required=True)
+    parser.add_argument("--outdir", default="panels")
+    parser.add_argument("--width", type=int, default=600)
+    parser.add_argument("--height", type=int, default=600)
+    args = parser.parse_args()
+    
+    os.makedirs(args.outdir, exist_ok=True)
+    obj = args.pdb.lower()
+    cmd.fetch(args.pdb, obj)
+    cmd.bg_color("white")
+    
+    print(f"Generating panels for {args.pdb}...")
+    
+    for panel_name, desc, view_func in PANELS:
+        for style_name, style_config in STYLES:
+            print(f"  {panel_name} / {style_name}...")
+            render_panel(obj, panel_name, view_func, style_name, style_config,
+                        args.outdir, args.width, args.height)
+    
+    print(f"\nPanels saved to {args.outdir}/")
+    print("Combine with ImageMagick: montage panels/*.png -tile 4x4 -geometry +2+2 figure.png")
+
+if __name__ == "__main__":
+    main()</code></pre>
+</section>
+
+<section>
+<h2>Example 5: Sequence Conservation Mapping</h2>
+<p>Map conservation scores onto a structure (requires pre-computed scores).</p>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+conservation.py — Map conservation scores to structure as B-factors
+Usage: pymol -c conservation.py --pdb 1ubq --scores scores.csv --output conserved.png
+"""
+
+from pymol import cmd
+import argparse
+import csv
+
+def load_scores(csv_file):
+    """Load residue conservation scores from CSV.
+    Expected columns: chain, resi, score (0-1, higher = more conserved)
+    """
+    scores = {}
+    with open(csv_file) as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            key = (row["chain"], int(row["resi"]))
+            scores[key] = float(row["score"])
+    return scores
+
+def apply_conservation(obj, scores):
+    """Set B-factors to conservation scores and color by spectrum."""
+    model = cmd.get_model(obj)
+    for atom in model.atom:
+        key = (atom.chain, atom.resi)
+        if key in scores:
+            atom.b = scores[key] * 100  # scale for visibility
+    cmd.load_model(model, obj)
+    cmd.spectrum("b", "blue_white_red", obj, minimum=0, maximum=100)
+    cmd.cartoon(obj)
+    cmd.set("cartoon_putty_scale_min", 0.1, obj)
+    cmd.set("cartoon_putty_scale_max", 1.0, obj)
+    cmd.set("cartoon_putty_transform", 0, obj)  # linear
+    cmd.cartoon("putty", obj)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pdb", required=True)
+    parser.add_argument("--scores", required=True, help="CSV with chain,resi,score")
+    parser.add_argument("--output", default="conservation.png")
+    args = parser.parse_args()
+    
+    obj = args.pdb.lower()
+    cmd.fetch(args.pdb, obj)
+    
+    scores = load_scores(args.scores)
+    print(f"Loaded {len(scores)} conservation scores")
+    
+    apply_conservation(obj, scores)
+    cmd.bg_color("white")
+    cmd.orient(obj)
+    
+    # Add colorbar legend (manual approach)
+    cmd.pseudoatom("legend", pos=[0,0,0])
+    cmd.show("spheres", "legend")
+    cmd.color("blue", "legend")
+    # ... more legend work needed for production
+    
+    cmd.png(args.output, width=1200, height=1200, dpi=300, ray=1)
+    print(f"Saved: {args.output}")
+
+if __name__ == "__main__":
+    main()</code></pre>
+</section>
+
+<section>
+<h2>Putting It All Together</h2>
+<p>These examples demonstrate patterns you can adapt:</p>
+
+<table>
+<thead>
+<tr><th>Pattern</th><th>Use Case</th><th>Key Commands</th></tr>
+</thead>
+<tbody>
+<tr><td>Batch loop</td><td>Process many PDBs identically</td><td><code>for pdb in list: fetch, style, png, delete</code></td></tr>
+<tr><td>State iteration</td><td>Trajectory analysis, movies</td><td><code>for state in range(1, n+1): frame, png</code></td></tr>
+<tr><td>Selection algebra</td><td>Target specific regions</td><td><code>"chain A and resi 10-20 and name CA"</code></td></tr>
+<tr><td>Measurement</td><td>Distances, angles, contacts</td><td><code>distance, get_angle, get_dihedral</code></td></tr>
+<tr><td>View management</td><td>Reproducible figures</td><td><code>get_view, set_view, orient, zoom</code></td></tr>
+<tr><td>Style functions</td><td>Consistent multi-panel figures</td><td><code>def style_preset(obj): ...</code></td></tr>
+</tbody>
+</section>
+
+<section>
+<h2>Next Steps</h2>
+<ul>
+<li>Explore <code>cmd.iterate()</code> and <code>cmd.alter()</code> for per-atom operations</li>
+
+<div class="socratic" data-question="adv-1">
+<h4>Check Your Understanding</h4>
+<p>When would you use <code>cmd.iterate()</code> vs a simple loop over <code>cmd.get_coords()</code>?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> iterate() runs a Python expression for each atom in a selection, giving access to all atom properties (resi, resn, chain, b, q, etc.) without transferring coordinate arrays. get_coords() returns just an Nx3 NumPy array — faster for bulk math, but loses per-atom metadata.</p>
+<p><strong>Misconceptions:</strong> "iterate() is always slower." "get_coords() gives you residue numbers." "They're interchangeable."</p>
+</div>
+</div>
+
+<div class="socratic" data-question="adv-2">
+<h4>Check Your Understanding</h4>
+<p>What does <code>cmd.alter("obj", "b=resi")</code> do?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> Sets the B-factor (b) of every atom in "obj" to its residue number (resi). alter() evaluates a Python expression per-atom to modify properties. Useful for encoding data into B-factors for coloring.</p>
+<p><strong>Misconceptions:</strong> "It changes the residue numbers." "b=resi is a string assignment, not an expression." "It only works on the first state."</p>
+</div>
+</div>
+<li>Learn the <code>pymol2</code> module for cleaner context-manager usage: <code>with pymol2.PyMOL() as pymol: pymol.cmd.fetch(...)</code></li>
+<li>Integrate with NumPy/SciPy for numerical analysis of coordinates</li>
+<li>Use PyMOL's <code>wizard</code> module for interactive measurement tools</li>
+<li>Check out <a href="https://github.com/Pymol-Scripts/Pymol-script-repo" target="_blank">Pymol-script-repo</a> for community scripts</li>
+</ul>
+</section>
+
+<div class="lesson-nav">
+<a href="lesson3.html">← Lesson 3: Scripting Basics</a>
+<a href="index.html">Home →</a>
+</div>
+</main>
+
+<footer>
+<p>Part of the OSU LLM Workshop — <a href="https://github.com/MooersLab/osu-llm-workshop" target="_blank">GitHub Repository</a></p>
+</footer>
+
+<script src="socratic.js" defer></script>
+</body>
+</html>

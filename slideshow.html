@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Radiation Damage in Sub-Ångström Crystallography</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/white.css" id="theme">
+<link rel="stylesheet" href="slideshow-reveal.css">
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- Slide 1: Title -->
+<section>
+<h1>Radiation Damage in Sub-Ångström Crystallography</h1>
+<h3>Which Dataset is Best for Hirshfeld Refinement?</h3>
+<p><em>Based on Bourenkov et al. 2026 &amp; Paknia et al. 2026 (Acta Cryst. D82)</em></p>
+<p><a href="https://github.com/MooersLab/osu-llm-workshop" target="_blank">GitHub Repository</a></p>
+</section>
+
+<!-- Slide 2: Three Datasets -->
+<section>
+<h2>Three Datasets Compared</h2>
+<p>All collected at 100 K on EMBL P14 beamline (DESY PETRA III) with top-hat beams.</p>
+<table>
+<thead>
+<tr><th>Dataset</th><th>Paper</th><th>Dose</th><th>Resolution</th><th>Unique Refl.</th><th>Rwork/Rfree</th><th>Avg B (Å²)</th><th>Compl. (%)</th></tr>
+</thead>
+<tbody>
+<tr><td>50 kGy</td><td>Bourenkov</td><td>50 kGy</td><td>0.545 Å</td><td>117,913</td><td>7.63/8.51%</td><td>4.48</td><td>94.2</td></tr>
+<tr><td>1 MGy</td><td>Bourenkov</td><td>1000 kGy</td><td>0.567 Å</td><td>96,302</td><td>7.57/8.41%</td><td>5.32</td><td>94.1</td></tr>
+<tr class="highlight"><td>500 kGy</td><td>Paknia</td><td>500 kGy</td><td><strong>0.433 Å</strong></td><td><strong>245,905</strong></td><td><strong>6.82/7.25%</strong></td><td><strong>3.56</strong></td><td><strong>96.2</strong></td></tr>
+</tbody>
+</table>
+<p class="key-point">Source: <code>results/values.csv</code> — all 30 rows pass <code>check_values.py</code></p>
+<img src="images/paknia_table1.png" alt="Paknia Table 1 data collection and refinement statistics" style="max-width: 80%;">
+</section>
+
+<!-- Slide 3: Radiation Damage -->
+<section>
+<h2>Radiation Damage: Fe Oxidation State Changes</h2>
+<div class="two-col">
+<div>
+<p>The Fe–S bond lengths in the FeS₄ cluster reveal dose-dependent reduction:</p>
+<ul>
+<li><strong>50 kGy</strong>: Fe–S avg 2.28 Å → preserves Fe³⁺ (oxidized) state<br>Matches EXAFS 2.27 Å for Fe³⁺–S (Bunker &amp; Stern 1977)</li>
+<li><strong>1 MGy</strong>: Fe–S avg 2.32 Å → partial reduction to Fe²⁺<br>Matches EXAFS 2.32 Å for Fe²⁺–S (Shulman et al. 1978)</li>
+<li><strong>500 kGy</strong>: Fe–S avg 2.296 Å → <strong>intermediate, partial reduction</strong><br>"Lie precisely between those of the 50 kGy and 1 MGy structures" (Paknia p.7)</li>
+</ul>
+<blockquote>
+<strong>Bourenkov p.1</strong>: "Oxidized (Fe³⁺) state preserved to a large degree at 50 kGy, whereas at 1 MGy partially reduced to Fe²⁺"
+</blockquote>
+<p>Isomorphous difference maps show extensive conformational changes at 1 MGy coupled to Fe reduction.</p>
+</div>
+<div>
+<img src="images/bourenkov_diff_maps.png" alt="Isomorphous difference Fourier maps">
+<p class="caption">F<sub>50kGy</sub>–F<sub>1MGy</sub> difference maps reveal conformational changes (Bourenkov Fig. 3)</p>
+</div>
+</div>
+</section>
+
+<!-- Slide 4: Resolution Threshold -->
+<section>
+<h2>Resolution &amp; Data Quality: The Critical Threshold</h2>
+<div class="two-col">
+<div>
+<p>Deformation density (bonding electrons) typically requires <strong>&lt; 0.5–0.7 Å</strong> resolution (Afonine 2004, Jelsch 2000, Guillot 2008, cited in Paknia p.2).</p>
+<table>
+<thead>
+<tr><th>Dataset</th><th>Resolution</th><th>Verdict</th></tr>
+</thead>
+<tbody>
+<tr class="highlight"><td>500 kGy</td><td>0.433 Å</td><td>✓ Well within range — highest protein resolution ever</td></tr>
+<tr class="warning"><td>50 kGy</td><td>0.545 Å</td><td>⚠ Borderline — Fourier termination effects mask aspherical features</td></tr>
+<tr class="warning"><td>1 MGy</td><td>0.567 Å</td><td>⚠ Borderline — same limitation + radiation damage</td></tr>
+</tbody>
+</table>
+<blockquote>
+<strong>Bourenkov p.4</strong>: "Termination effects expected at 0.4–0.6 Å… known to mask aspherical density features"
+</blockquote>
+<div class="key-point">The 500 kGy dataset's <strong>0.433 Å resolution</strong> is the decisive advantage for Hirshfeld refinement.</div>
+</div>
+<div>
+<img src="images/paknia_deformation.png" alt="Deformation density maps from Paknia">
+<p class="caption">Deformation density (Fc,TAAM–Fc,IAM) maps at 0.43 Å (Paknia Fig. 2)</p>
+</div>
+</div>
+</section>
+
+<!-- Slide 5: TAAM Refinement -->
+<section>
+<h2>TAAM Refinement on the 500 kGy Dataset</h2>
+<div class="two-col">
+<div>
+<ul>
+<li>TAAM (Transferable Aspherical Atom Model) via DiSCaMB/MATTS in BUSTER</li>
+<li>IAM: Rwork/Rfree = 6.82/7.25% → TAAM: <strong>6.51/6.93%</strong></li>
+<li>TAAM "resolves all positive density features in midpoints of chemical bonds" (p.1)</li>
+<li>mFₒ–DFc,TAAM maps show <strong>NO features</strong> at 0.55 e/Å³ (2.8 r.m.s.)</li>
+<li>Validates positive difference densities as genuine deformation density</li>
+<li>Fe–S₄ site <strong>excluded from TAAM</strong> (no MATTS parameters) → partial Fe reduction does not compromise backbone/side-chain deformation analysis</li>
+</ul>
+<blockquote>
+<strong>Paknia p.1</strong>: "TAAM refinements resolve all positive density features in midpoints of chemical bonds"
+</blockquote>
+<div class="key-point">This is the <strong>first successful TAAM refinement</strong> at sub-0.45 Å for a protein.</div>
+</div>
+<div>
+<img src="images/paknia_workflow.png" alt="GPhL workflow for data collection">
+<p class="caption">Global Phasing Ltd automated workflow (Paknia Fig. 1)</p>
+</div>
+</div>
+</section>
+
+<!-- Slide 6: Critical Critique -->
+<section>
+<h2>Critical Critique: Is the 500 kGy Dataset Truly "Best"?</h2>
+<div class="two-col">
+<div>
+<h3>The Radiation Damage Caveat</h3>
+<div class="warning"><strong>The 500 kGy dataset shows partial Fe reduction (Fe–S avg 2.296 Å).</strong> The metal center is not in its native oxidized state.</div>
+
+<h3>Why It May Still Be the Best Choice:</h3>
+<ol>
+<li><strong>Resolution trumps dose for Hirshfeld</strong>: At 0.433 Å, deformation density is observable; at 0.55 Å it is masked by Fourier termination effects regardless of dose.</li>
+<li><strong>Fe–S₄ site is handled separately</strong>: Excluded from TAAM (no aspherical parameters in MATTS). The partial reduction only affects interpretation of the metal site itself.</li>
+<li><strong>Uniform dose distribution</strong>: Top-hat beam + large crystal = "resolution in dose" (Bourenkov). No dose gradients convoluting damage.</li>
+<li><strong>Superior overall metrics</strong>: Most reflections, highest completeness, lowest B factors, lowest R factors.</li>
+</ol>
+
+<h3>What Is Compromised:</h3>
+<ul>
+<li>Quantum crystallography of the Fe–S₄ cluster itself — the metal site's electronic structure is perturbed.</li>
+<li>Any mechanistic interpretation requiring the native Fe³⁺ state.</li>
+</ul>
+<div class="verdict-box">
+<strong>Verdict</strong>: For <em>general protein Hirshfeld refinement</em> (backbone, side chains, bonding density), 500 kGy is best. For <em>Fe–S₄ cluster quantum crystallography</em>, a lower-dose 0.43 Å dataset would be ideal — but does not yet exist.
+</div>
+</div>
+<div>
+<img src="images/bourenkov_rotamers.png" alt="Ile8 and Pro40 rotamer interconversion">
+<p class="caption">Dose-dependent rotamer interconversion at Ile8 &amp; Pro40 (Bourenkov Fig. 4)</p>
+</div>
+</div>
+</section>
+
+<!-- Slide 7: Hypotheses Tested -->
+<section>
+<h2>Hypotheses Tested</h2>
+<div class="two-col">
+<div>
+<table>
+<thead>
+<tr><th>Hypothesis</th><th>Result</th><th>Evidence</th></tr>
+</thead>
+<tbody>
+<tr class="highlight">
+<td>H1: Resolution is primary factor for Hirshfeld suitability</td>
+<td><strong>SUPPORTED</strong></td>
+<td>0.433 Å enables TAAM; 0.55 Å borderline with termination effects</td>
+</tr>
+<tr class="warning">
+<td>H2: Lower dose (50 kGy) better — preserves true electronic structure</td>
+<td><strong>NOT SUPPORTED</strong></td>
+<td>Resolution too low for deformation density despite Fe³⁺ preservation</td>
+</tr>
+<tr class="highlight">
+<td>H3: 1 MGy worst due to radiation damage</td>
+<td><strong>SUPPORTED</strong></td>
+<td>Highest B, fewest reflections, lowest res, Fe reduction, conformational changes</td>
+</tr>
+</tbody>
+</table>
+<p>One literature search performed: "Hirshfeld atom refinement sub-angstrom macromolecular crystallography" (results in <code>results/refs.bib</code>).</p>
+</div>
+<div>
+<img src="images/bourenkov_beam_profile.png" alt="Beam profile">
+<p class="caption">Uniform top-hat beam enables "resolution in dose" (Bourenkov Fig. 1)</p>
+</div>
+</div>
+</section>
+
+<!-- Slide 8: Conclusion -->
+<section>
+<h2>Conclusion &amp; Open Questions</h2>
+<div class="two-col">
+<div>
+<h3>The 500 kGy Dataset (Paknia 2026) is Most Suitable for Hirshfeld Refinement</h3>
+<ul>
+<li>✓ <strong>0.433 Å resolution</strong> — highest ever for a protein, well below 0.5 Å threshold</li>
+<li>✓ <strong>TAAM refinement validated</strong> — resolves bonding electron density across the protein</li>
+<li>✓ <strong>Superior data quality</strong> — most reflections, highest completeness, lowest R/B factors</li>
+<li>✓ <strong>Uniform dose</strong> — top-hat beam gives "resolution in dose" (Bourenkov)</li>
+<li>✓ <strong>Fe–S₄ handled separately</strong> — excluded from TAAM, partial reduction OK for general refinement</li>
+</ul>
+
+<h3>Open Questions</h3>
+<ol>
+<li>Could an even <strong>lower-dose dataset at 0.43 Å</strong> be collected with a larger crystal or brighter beam?</li>
+<li>Does the partial Fe reduction at 500 kGy affect interpretation of the Fe–S₄ site's electronic structure for <em>quantum crystallography</em> studies?</li>
+<li>Can Fourier series termination effects at 0.55 Å be computationally corrected to enable Hirshfeld refinement on the 50 kGy dataset?</li>
+</ol>
+</div>
+<div>
+<img src="images/paknia_deformation.png" alt="Deformation density">
+<p class="caption">0.43 Å deformation density reveals bonding electrons (Paknia Fig. 2)</p>
+</div>
+</div>
+<div class="verdict-box final-verdict">
+<strong>Bottom line</strong>: For Hirshfeld refinement of the protein structure <em>overall</em>, the 500 kGy dataset wins decisively on resolution and data quality. For studies of the Fe–S₄ cluster specifically, radiation damage remains a concern.
+</div>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/plugin/markdown/markdown.js"></script>
+<script src="slideshow-reveal.js"></script>
+</body>
+</html>

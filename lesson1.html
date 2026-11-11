@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: The Prompt — Python in PyMOL</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<h1>Python in PyMOL</h1>
+<p class="subtitle">An introductory guide to scripting molecular graphics</p>
+</header>
+
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="lesson1.html" class="active">Lesson 1: The Prompt</a></li>
+<li><a href="lesson2.html">Lesson 2: Basic Commands</a></li>
+<li><a href="lesson3.html">Lesson 3: Scripting Basics</a></li>
+<li><a href="lesson4.html">Lesson 4: Practical Examples</a></li>
+</ul>
+</nav>
+
+<main>
+<div class="lesson-header">
+<h1>Lesson 1: The Prompt</h1>
+<p class="meta">Accessing and using the Python interpreter inside PyMOL</p>
+</div>
+
+<div class="lesson-nav">
+<a href="index.html">← Home</a>
+<a href="lesson2.html">Lesson 2: Basic Commands →</a>
+</div>
+
+<section class="objectives">
+<h3>Learning Objectives</h3>
+<ul>
+<li>Launch PyMOL and find the Python interpreter</li>
+<li>Run Python statements directly at the PyMOL prompt</li>
+<li>Understand the <code>cmd</code> module — PyMOL's command namespace</li>
+<li>Distinguish between PyMOL commands and Python code</li>
+</ul>
+</section>
+
+<section>
+<h2>Starting PyMOL</h2>
+<p>Launch PyMOL from your terminal:</p>
+<pre><code class="language-bash">$ pymol</code></pre>
+<p>This opens the PyMOL GUI with an internal command line at the bottom. The prompt looks like:</p>
+<pre><code>PyMOL&gt;</code></pre>
+<p>This prompt accepts both PyMOL's native commands <em>and</em> Python code.</p>
+</section>
+
+<section>
+<h2>The Two Ways to Run Python</h2>
+
+<h3>1. Directly at the PyMOL Prompt</h3>
+<p>Type Python statements directly. They execute immediately:</p>
+<pre><code>PyMOL&gt; print("Hello from PyMOL!")
+Hello from PyMOL!</code></pre>
+
+<h3>2. The Python Shell (<code>python</code> command)</h3>
+<p>Enter a dedicated Python REPL with <code>python</code> (exit with <code>Ctrl+D</code> or <code>exit()</code>):</p>
+<pre><code>PyMOL&gt; python
+Python 3.x.x (default, ...)
+Type "exit()" to return to PyMOL.
+>>> import sys
+>>> sys.version
+'3.x.x ...'
+>>> exit()
+PyMOL&gt;</code></pre>
+<p class="key-point"><strong>Tip:</strong> For quick one-liners, stay at the PyMOL prompt. For exploration or multi-line code, use <code>python</code> to enter the shell.</p>
+</section>
+
+<section>
+<h2>The <code>cmd</code> Module — Your Gateway to PyMOL</h2>
+<p>All PyMOL functionality is exposed through the <code>cmd</code> module. It's automatically imported and available as <code>cmd</code> at the prompt.</p>
+
+<h3>Importing explicitly (in scripts)</h3>
+<pre><code>from pymol import cmd</code></pre>
+
+<h3>Calling PyMOL commands from Python</h3>
+<p>Every PyMOL command becomes a function on <code>cmd</code>:</p>
+<pre><code>PyMOL&gt; cmd.help("load")
+Help on function load in module pymol.cmd:
+load(filename, object=None, ...)</code></pre>
+<p class="key-point"><strong>Key insight:</strong> <code>cmd.load(...)</code> in Python ≡ <code>load ...</code> at the PyMOL prompt. They are the same command, just different syntax.</p>
+</section>
+
+<section>
+<h2>Your First Commands</h2>
+<p>Try these at the PyMOL prompt:</p>
+
+<pre><code class="language-python"># Load a structure (fetch from PDB)
+cmd.fetch("1ubq", "ubiquitin")
+
+# List loaded objects
+cmd.get_names()
+
+# See the command namespace
+dir(cmd)[:10]  # first 10 entries</code></pre>
+
+<div class="socratic" data-question="prompt-1">
+<h4>Check Your Understanding</h4>
+<p>What is the difference between typing <code>fetch 1ubq</code> at the PyMOL prompt versus <code>cmd.fetch("1ubq")</code> in Python?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> They do the same thing — both load the PDB structure 1ubq. The first uses PyMOL's native command syntax; the second calls the same command through Python's <code>cmd</code> module. The Python form lets you use variables, loops, conditionals, and functions — enabling automation.</p>
+<p><strong>Misconception:</strong> "They're completely different systems." No — <code>cmd</code> is just a Python wrapper around the exact same internal command engine.</p>
+</div>
+</div>
+
+<div class="socratic" data-question="prompt-2">
+<h4>Check Your Understanding</h4>
+<p>When you're at the PyMOL prompt and type <code>python</code>, what happens? How do you get back?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> You enter a dedicated Python REPL (Read-Eval-Print Loop) where you can write multi-line Python code. Type <code>exit()</code> or press Ctrl+D to return to the PyMOL prompt.</p>
+<p><strong>Misconceptions:</strong> "The python command runs a script file." "You can't use PyMOL commands inside the Python shell." "exit() quits PyMOL entirely."</p>
+</div>
+</div>
+
+<div class="socratic" data-question="prompt-3">
+<h4>Check Your Understanding</h4>
+<p>Why do string arguments need quotes in Python (<code>cmd.fetch("1ubq")</code>) but not at the PyMOL prompt (<code>fetch 1ubq</code>)?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> At the PyMOL prompt, the command parser treats unquoted words as string arguments by convention. In Python, you're writing actual Python syntax where strings must be quoted. The cmd module is a Python library — it follows Python rules.</p>
+<p><strong>Misconceptions:</strong> "PyMOL's native syntax is Python." "Quotes are optional in Python too." "The cmd module uses a different parser."</p>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Getting Help</h2>
+<p>Three ways to learn what commands exist:</p>
+<ul>
+<li><code>cmd.help("command_name")</code> — detailed help for one command</li>
+<li><code>cmd.apropos("keyword")</code> — search commands by keyword</li>
+<li><code>dir(cmd)</code> — list all available functions</li>
+</ul>
+<pre><code>PyMOL&gt; cmd.apropos("color")
+color
+color_by_element
+color_by_hetatm
+...</code></pre>
+</section>
+
+<section>
+<h2>Common Pitfalls</h2>
+<div class="warning">
+<strong>Pitfall:</strong> Forgetting quotes around string arguments in Python.
+<pre><code># Wrong - PyMOL native syntax (no quotes needed at prompt)
+fetch 1ubq
+
+# Right - Python syntax (quotes required)
+cmd.fetch("1ubq")</code></pre>
+</div>
+
+<div class="warning">
+<strong>Pitfall:</strong> Using PyMOL command flags as Python keyword arguments incorrectly.
+<pre><code># PyMOL native
+load file.pdb, myobj, discrete=1
+
+# Python - use True/False, not 1/0
+cmd.load("file.pdb", "myobj", discrete=True)</code></pre>
+</div>
+</section>
+
+<section>
+<h2>Summary</h2>
+<ul>
+<li>PyMOL's prompt accepts both native commands and Python</li>
+<li>The <code>cmd</code> module exposes every PyMOL command as a Python function</li>
+<li>Use <code>python</code> to enter a full Python REPL; <code>exit()</code> to return</li>
+<li>String arguments need quotes in Python; booleans use <code>True</code>/<code>False</code></li>
+</ul>
+</section>
+
+<div class="lesson-nav">
+<a href="index.html">← Home</a>
+<a href="lesson2.html">Lesson 2: Basic Commands →</a>
+</div>
+</main>
+
+<footer>
+<p>Part of the OSU LLM Workshop — <a href="https://github.com/MooersLab/osu-llm-workshop" target="_blank">GitHub Repository</a></p>
+</footer>
+
+<script src="socratic.js" defer></script>
+</body>
+</html>

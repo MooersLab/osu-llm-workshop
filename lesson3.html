@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Scripting Basics — Python in PyMOL</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<h1>Python in PyMOL</h1>
+<p class="subtitle">An introductory guide to scripting molecular graphics</p>
+</header>
+
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="lesson1.html">Lesson 1: The Prompt</a></li>
+<li><a href="lesson2.html">Lesson 2: Basic Commands</a></li>
+<li><a href="lesson3.html" class="active">Lesson 3: Scripting Basics</a></li>
+<li><a href="lesson4.html">Lesson 4: Practical Examples</a></li>
+</ul>
+</nav>
+
+<main>
+<div class="lesson-header">
+<h1>Lesson 3: Scripting Basics</h1>
+<p class="meta">Writing reusable Python scripts for PyMOL</p>
+</div>
+
+<div class="lesson-nav">
+<a href="lesson2.html">← Lesson 2: Basic Commands</a>
+<a href="lesson4.html">Lesson 4: Practical Examples →</a>
+</div>
+
+<section class="objectives">
+<h3>Learning Objectives</h3>
+<ul>
+<li>Create and run .py script files</li>
+<li>Write functions that encapsulate PyMOL workflows</li>
+<li>Use loops and conditionals for batch operations</li>
+<li>Handle command-line arguments</li>
+<li>Structure scripts for reusability</li>
+</ul>
+</section>
+
+<section>
+<h2>Running Python Scripts</h2>
+
+<h3>From the command line (headless)</h3>
+<pre><code class="language-bash"># Run script and exit
+pymol -c script.py
+
+# Run script, stay interactive
+pymol script.py
+
+# Run with arguments
+pymol -c script.py -- arg1 arg2</code></pre>
+
+<h3>From inside PyMOL</h3>
+<pre><code class="language-python"># At PyMOL prompt
+run script.py
+
+# Or from Python
+exec(open("script.py").read())</code></pre>
+
+<p class="key-point"><strong>Tip:</strong> Use <code>pymol -cq script.py</code> for fully headless batch processing (no GUI, quiet, quit after).</p>
+
+<div class="socratic" data-question="script-1">
+<h4>Check Your Understanding</h4>
+<p>What's the difference between running <code>pymol -c script.py</code> and <code>pymol script.py</code>?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> <code>pymol -c script.py</code> runs headless (no GUI), executes the script, and exits. <code>pymol script.py</code> launches the GUI, runs the script, and stays interactive. Use -c for batch/automation; without -c for development/debugging.</p>
+<p><strong>Misconceptions:</strong> "-c means 'continue' and keeps the GUI open." "Both behave identically." "You can't use -c with scripts that need user input."</p>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Your First Script</h2>
+<p>Save as <code>hello_pymol.py</code>:</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+hello_pymol.py — Minimal PyMOL script
+Run with: pymol -c hello_pymol.py
+"""
+
+from pymol import cmd
+
+def main():
+    print("Loading ubiquitin...")
+    cmd.fetch("1ubq", "ubq")
+    
+    print("Setting up cartoon representation...")
+    cmd.cartoon("ubq")
+    cmd.color("green", "ubq")
+    
+    print("Saving image...")
+    cmd.png("ubiquitin.png", width=800, height=600, dpi=150, ray=1)
+    
+    print("Done!")
+
+if __name__ == "__main__":
+    main()</code></pre>
+
+<p>Run it:</p>
+<pre><code class="language-bash">pymol -c hello_pymol.py</code></pre>
+</section>
+
+<section>
+<h2>Script Structure Template</h2>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+script_name.py — One-line description
+
+Longer description of what this script does,
+its inputs, outputs, and any requirements.
+
+Usage:
+    pymol -c script_name.py [options]
+"""
+
+from pymol import cmd
+import sys
+import argparse
+
+# ---- Configuration / Constants ----
+DEFAULT_COLOR = "cyan"
+DEFAULT_WIDTH = 800
+
+# ---- Helper Functions ----
+def setup_scene(obj_name, color=DEFAULT_COLOR):
+    """Apply standard visualization to an object."""
+    cmd.cartoon(obj_name)
+    cmd.color(color, obj_name)
+    cmd.bg_color("white")
+
+def save_figure(filename, width=DEFAULT_WIDTH, height=600, ray=True):
+    """Render and save a publication-quality PNG."""
+    cmd.png(filename, width=width, height=height, dpi=150, ray=1 if ray else 0)
+
+# ---- Main Workflow ----
+def main(pdb_id, output="output.png", color=DEFAULT_COLOR):
+    """Main pipeline: fetch, style, render."""
+    obj = pdb_id.lower()
+    
+    print(f"Fetching {pdb_id}...")
+    cmd.fetch(pdb_id, obj)
+    
+    print("Styling...")
+    setup_scene(obj, color)
+    
+    print(f"Rendering to {output}...")
+    save_figure(output)
+    
+    print("Complete.")
+
+# ---- CLI Entry Point ----
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Render a PDB structure")
+    parser.add_argument("pdb_id", help="PDB ID to fetch (e.g., 1ubq)")
+    parser.add_argument("-o", "--output", default="output.png", help="Output filename")
+    parser.add_argument("-c", "--color", default=DEFAULT_COLOR, help="Cartoon color")
+    args = parser.parse_args()
+    
+    main(args.pdb_id, args.output, args.color)</code></pre>
+
+<div class="socratic" data-question="script-2">
+<h4>Check Your Understanding</h4>
+<p>In a PyMOL script, why wrap the main logic in <code>if __name__ == "__main__":</code>?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> It allows the script to be imported as a module (e.g., for testing helper functions) without executing the main workflow. Only runs when the file is executed directly.</p>
+<p><strong>Misconceptions:</strong> "It's required for PyMOL scripts to work." "It makes the script run faster." "It enables command-line arguments."</p>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Functions for Reusable Workflows</h2>
+<p>Encapsulate common patterns into functions:</p>
+
+<pre><code class="language-python">def load_and_style(pdb_id, obj_name=None, style="cartoon", color="spectrum"):
+    """Load a structure and apply a standard style."""
+    if obj_name is None:
+        obj_name = pdb_id.lower()
+    cmd.fetch(pdb_id, obj_name)
+    
+    if style == "cartoon":
+        cmd.cartoon(obj_name)
+    elif style == "sticks":
+        cmd.show("sticks", obj_name)
+    
+    if color == "spectrum":
+        cmd.spectrum("b", "rainbow", obj_name)
+    else:
+        cmd.color(color, obj_name)
+    
+    return obj_name
+
+# Use it
+load_and_style("1ubq", color="green")
+load_and_style("2ubq", color="blue")</code></pre>
+</section>
+
+<section>
+<h2>Loops for Batch Operations</h2>
+
+<h3>Process multiple structures</h3>
+<pre><code class="language-python">pdb_list = ["1ubq", "2ubq", "3ubq", "4ubq"]
+
+for pdb in pdb_list:
+    obj = pdb.lower()
+    cmd.fetch(pdb, obj)
+    cmd.cartoon(obj)
+    cmd.util.cbc(obj)  # color by chain
+    
+    # Save each
+    cmd.png(f"{obj}.png", width=600, height=600, ray=1)
+    
+    # Clean up for next iteration
+    cmd.delete(obj)
+
+print(f"Processed {len(pdb_list)} structures")</code></pre>
+
+<h3>Iterate over states in a trajectory</h3>
+<pre><code class="language-python">cmd.load("trajectory.xtc", "protein", state=0)
+n_states = cmd.count_states("protein")
+
+for state in range(1, n_states + 1):
+    cmd.frame(state)
+    cmd.png(f"frame_{state:04d}.png", width=800, height=600, ray=1)
+</code></pre>
+
+<div class="socratic" data-question="script-3">
+<h4>Check Your Understanding</h4>
+<p>When iterating over trajectory frames with <code>for state in range(1, n_states + 1):</code>, why does the range start at 1?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> PyMOL states are 1-indexed. State 1 is the first frame. <code>cmd.count_states()</code> returns the total count, so the last state is n_states, requiring range(1, n_states + 1).</p>
+<p><strong>Misconceptions:</strong> "Python is 0-indexed so PyMOL must be too." "State 0 is the first frame." "The +1 is a bug."</p>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Conditionals and Logic</h2>
+<pre><code class="language.python">
+def analyze_structure(obj):
+    """Analyze and report on a structure."""
+    n_atoms = cmd.count_atoms(obj)
+    n_residues = len(set(cmd.get_model(obj).get_residues()))
+    
+    print(f"{obj}: {n_atoms} atoms, {n_residues} residues")
+    
+    if n_atoms > 50000:
+        print("  ⚠ Large structure — consider simplifying")
+        cmd.show("cartoon", obj)
+    else:
+        cmd.show("sticks", obj)
+    
+    # Check for ligands
+    ligands = cmd.select("ligands", f"{obj} and hetero and not solvent")
+    if ligands > 0:
+        print(f"  Found {ligands} ligand atoms")
+        cmd.show("sticks", "ligands")
+        cmd.color("yellow", "ligands")
+    
+    return {"atoms": n_atoms, "residues": n_residues, "has_ligands": ligands > 0}
+
+results = analyze_structure("my_protein")</code></pre>
+</section>
+
+<section>
+<h2>Command-Line Arguments</h2>
+<p>Make scripts configurable:</p>
+<pre><code class="language-python">
+import argparse
+
+parser = argparse.ArgumentParser(description="Batch render PDB structures")
+parser.add_argument("pdbs", nargs="+", help="PDB IDs or files")
+parser.add_argument("-o", "--outdir", default="renders", help="Output directory")
+parser.add_argument("--style", choices=["cartoon", "sticks", "surface"], default="cartoon")
+parser.add_argument("--color", default="spectrum")
+parser.add_argument("--width", type=int, default=800)
+parser.add_argument("--height", type=int, default=600)
+parser.add_argument("--no-ray", action="store_true", help="Skip ray tracing")
+args = parser.parse_args()
+
+import os
+os.makedirs(args.outdir, exist_ok=True)
+
+for pdb in args.pdbs:
+    # ... process each
+</code></pre>
+</section>
+
+<section>
+<h2>Error Handling</h2>
+<pre><code class="language-python">
+from pymol import CmdException
+
+def safe_fetch(pdb_id, obj_name):
+    """Fetch with graceful error handling."""
+    try:
+        cmd.fetch(pdb_id, obj_name)
+        return True
+    except CmdException as e:
+        print(f"Failed to fetch {pdb_id}: {e}")
+        return False
+
+def safe_load(filepath, obj_name):
+    """Load local file with validation."""
+    import os
+    if not os.path.exists(filepath):
+        print(f"File not found: {filepath}")
+        return False
+    try:
+        cmd.load(filepath, obj_name)
+        return True
+    except CmdException as e:
+        print(f"Failed to load {filepath}: {e}")
+        return False</code></pre>
+</section>
+
+<section>
+<h2>Settings and Persistence</h2>
+<p>Control PyMOL settings programmatically:</p>
+<pre><code class="language-python">
+# Get/set individual settings
+cmd.get("ray_shadows")        # returns current value (0 or 1)
+cmd.set("ray_shadows", 0)     # disable shadows for faster rendering
+
+# Common rendering settings
+cmd.set("ray_opaque_background", 0)  # transparent background
+cmd.set("antialias", 2)              # 2x antialiasing
+cmd.set("ray_trace_mode", 1)         # cartoon-like ray trace
+
+# Save/restore settings
+settings_backup = {}
+for key in ["ray_shadows", "antialias", "ray_trace_mode"]:
+    settings_backup[key] = cmd.get(key)
+
+# ... do rendering ...
+
+for key, val in settings_backup.items():
+    cmd.set(key, val)</code></pre>
+
+<div class="socratic" data-question="script-4">
+<h4>Check Your Understanding</h4>
+<p>What does <code>cmd.get_view()</code> return and why is it useful?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> An 18-element list (a 4x4 view matrix plus clipping planes) representing the exact camera position, orientation, and zoom. Saving/restoring it ensures identical views across sessions or figures.</p>
+<p><strong>Misconceptions:</strong> "It returns a simple (x, y, z) tuple." "It only works in the GUI, not headless." "orient() and get_view() do the same thing."</p>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Debugging Tips</h2>
+<div class="warning">
+<strong>Debugging:</strong> PyMOL scripts run in a constrained environment. Tips:
+<ul>
+<li>Use <code>print()</code> liberally — output appears in the terminal</li>
+<li>Run with <code>pymol script.py</code> (not <code>-c</code>) to keep GUI for inspection</li>
+<li><code>cmd.refresh()</code> forces GUI update during long scripts</li>
+<li>Wrap risky code in <code>try/except CmdException</code></li>
+</ul>
+</div>
+</section>
+
+<section>
+<h2>Summary</h2>
+<ul>
+<li>Scripts: <code>pymol -c script.py</code> (batch) or <code>run script.py</code> (interactive)</li>
+<li>Structure: imports → constants → helpers → main() → CLI parsing</li>
+<li>Functions encapsulate reusable workflows</li>
+<li>Loops enable batch processing of structures/states</li>
+<li><code>argparse</code> makes scripts configurable</li>
+<li>Always handle <code>CmdException</code> for robustness</li>
+</ul>
+</section>
+
+<div class="lesson-nav">
+<a href="lesson2.html">← Lesson 2: Basic Commands</a>
+<a href="lesson4.html">Lesson 4: Practical Examples →</a>
+</div>
+</main>
+
+<footer>
+<p>Part of the OSU LLM Workshop — <a href="https://github.com/MooersLab/osu-llm-workshop" target="_blank">GitHub Repository</a></p>
+</footer>
+
+<script src="socratic.js" defer></script>
+</body>
+</html>

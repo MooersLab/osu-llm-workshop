@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Basic Commands — Python in PyMOL</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<h1>Python in PyMOL</h1>
+<p class="subtitle">An introductory guide to scripting molecular graphics</p>
+</header>
+
+<nav>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="lesson1.html">Lesson 1: The Prompt</a></li>
+<li><a href="lesson2.html" class="active">Lesson 2: Basic Commands</a></li>
+<li><a href="lesson3.html">Lesson 3: Scripting Basics</a></li>
+<li><a href="lesson4.html">Lesson 4: Practical Examples</a></li>
+</ul>
+</nav>
+
+<main>
+<div class="lesson-header">
+<h1>Lesson 2: Basic Commands</h1>
+<p class="meta">Essential PyMOL commands for loading, viewing, and manipulating structures</p>
+</div>
+
+<div class="lesson-nav">
+<a href="lesson1.html">← Lesson 1: The Prompt</a>
+<a href="lesson3.html">Lesson 3: Scripting Basics →</a>
+</div>
+
+<section class="objectives">
+<h3>Learning Objectives</h3>
+<ul>
+<li>Load structures from files and the PDB</li>
+<li>Change representations (cartoon, sticks, spheres, surface)</li>
+<li>Color structures by element, chain, residue, or custom schemes</li>
+<li>Navigate the scene (rotate, zoom, center, orient)</li>
+<li>Select and manipulate specific atoms/residues/chains</li>
+</ul>
+</section>
+
+<section>
+<h2>Loading Structures</h2>
+
+<h3>From a local file</h3>
+<pre><code class="language-python">cmd.load("structure.pdb", "my_protein")
+# cmd.load(filename, object_name)</code></pre>
+
+<h3>Fetching from the PDB</h3>
+<pre><code class="language-python">cmd.fetch("1ubq", "ubiquitin")        # single structure
+cmd.fetch("1ubq 2ubq", "multi")       # multiple, merged
+cmd.fetch("1ubq", "ubq", type="cif")  # mmCIF format</code></pre>
+
+<h3>Loading trajectories</h3>
+<pre><code class="language-python">cmd.load("traj.xtc", "protein", state=0)  # state=0 appends all frames</code></pre>
+
+<div class="socratic" data-question="load-1">
+<h4>Check Your Understanding</h4>
+<p>When you run <code>cmd.load("file.pdb", "obj")</code> twice with the same object name, what happens?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> The second load replaces the first object. PyMOL object names must be unique — loading into an existing name overwrites it. Use different names (or <code>cmd.delete("obj")</code> first) to keep multiple versions.</p>
+</div>
+</div>
+
+<div class="socratic" data-question="load-2">
+<h4>Check Your Understanding</h4>
+<p>What's the difference between <code>cmd.fetch("1ubq")</code> and <code>cmd.load("1ubq.pdb")</code>?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> fetch downloads from the PDB database by ID (requires internet). load reads a local file from disk. fetch can also specify format (cif, pdb) and handles multiple IDs.</p>
+<p><strong>Misconceptions:</strong> "They're identical — fetch is just an alias for load." "load can download from PDB if given an ID." "fetch only works with the open-source PyMOL."</p>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Representations</h2>
+<p>Change how atoms are drawn:</p>
+
+<table>
+<thead>
+<tr><th>Style</th><th>Command</th><th>Best For</th></tr>
+</thead>
+<tbody>
+<tr><td>Cartoon</td><td><code>cmd.cartoon("object")</code></td><td>Secondary structure overview</td></tr>
+<tr><td>Sticks</td><td><code>cmd.show("sticks", "object")</code></td><td>Atomic detail, bonds</td></tr>
+<tr><td>Spheres</td><td><code>cmd.show("spheres", "object")</code></td><td>Space-filling, surfaces</td></tr>
+<tr><td>Surface</td><td><code>cmd.show("surface", "object")</code></td><td>Molecular surface, binding pockets</td></tr>
+<tr><td>Lines</td><td><code>cmd.show("lines", "object")</code></td><td>Backbone trace, minimal</td></tr>
+<tr><td>Ribbon</td><td><code>cmd.ribbon("object")</code></td><td>Simplified secondary structure</td></tr>
+</tbody>
+</table>
+
+<p>Hide representations:</p>
+<pre><code class="language-python">cmd.hide("sticks", "object")      # hide specific representation
+cmd.hide("everything", "object")  # hide all representations
+cmd.disable("object")             # disable object entirely (keeps in memory)</code></pre>
+
+<p class="key-point"><strong>Pro tip:</strong> Combine representations — e.g., cartoon backbone with sticks for ligand:</p>
+<pre><code class="language-python">cmd.cartoon("protein")
+cmd.show("sticks", "ligand")</code></pre>
+</section>
+
+<section>
+<h2>Coloring</h2>
+
+<h3>Built-in color schemes</h3>
+<pre><code class="language-python">cmd.color("red", "object")              # single color
+cmd.color("blue", "chain A")             # color a selection
+cmd.spectrum("b", "rainbow", "object")  # color by B-factor
+cmd.spectrum("count", "rainbow", "object")  # color by atom count</code></pre>
+
+<h3>Color by properties</h3>
+<pre><code class="language-python">cmd.util.cbc("object")       # color by chain (each chain different color)
+cmd.util.cbs("object")       # color by secondary structure
+cmd.util.cnumb("object")     # color by residue number</code></pre>
+
+<h3>Custom colors</h3>
+<pre><code class="language.py">
+cmd.set_color("my_green", [0.2, 0.8, 0.2])  # RGB 0-1
+cmd.color("my_green", "selection")</code></pre>
+
+<div class="socratic" data-question="color-1">
+<h4>Check Your Understanding</h4>
+<p>What's the difference between <code>cmd.color("red", "protein")</code> and <code>cmd.color("red", "chain A")</code>?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> The first colors the entire object "protein" red. The second uses a <em>selection</em> ("chain A") to color only that subset. Selections are powerful — they let you target specific atoms, residues, chains, or combinations.</p>
+</div>
+</div>
+
+<div class="socratic" data-question="color-2">
+<h4>Check Your Understanding</h4>
+<p>When would you use <code>cmd.spectrum("b", "rainbow", "obj")</code> versus <code>cmd.util.cbc("obj")</code>?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> spectrum colors by a numeric property (here B-factor) across a gradient. cbc (color by chain) assigns a distinct color to each chain. Use spectrum for continuous data (B-factors, conservation scores); use cbc for categorical distinction (chains, domains).</p>
+<p><strong>Misconceptions:</strong> "spectrum only works with rainbow palette." "cbc colors by residue number." "They produce the same result on a single-chain protein."</p>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Selections — The Power Tool</h2>
+<p>Selections let you target specific parts of a structure. Syntax: <code>"selection_name"</code> or inline <code>"criteria"</code>.</p>
+
+<h3>Common selection criteria</h3>
+<table>
+<thead>
+<tr><th>Criterion</th><th>Selects</th></tr>
+</thead>
+<tbody>
+<tr><td><code>"chain A"</code></td><td>Chain A</td></tr>
+<tr><td><code>"resi 10-20"</code></td><td>Residues 10 through 20</td></tr>
+<tr><td><code>"resn LYS"</code></td><td>All lysine residues</td></tr>
+<tr><td><code>"name CA"</code></td><td>Alpha carbons</td></tr>
+<tr><td><code>"elem C"</code></td><td>Carbon atoms</td></tr>
+<tr><td><code>"hetero"</code></td><td>Hetatms (ligands, water, ions)</td></tr>
+<tr><td><code>"protein"</code></td><td>All protein atoms</td></tr>
+<tr><td><code>"nucleic"</code></td><td>DNA/RNA atoms</td></tr>
+</tbody>
+</table>
+
+<h3>Combining selections</h3>
+<pre><code class="language-python"># Boolean operators
+"chain A and resi 10-20"      # AND
+"chain A or chain B"          # OR
+"protein and not hetero"      # NOT
+"resi 10-20 and name CA"      # CA atoms in residues 10-20</code></pre>
+
+<h3>Named selections (saved for reuse)</h3>
+<pre><code class="language-python">cmd.select("active_site", "resi 10-20 and chain A")
+cmd.color("yellow", "active_site")
+cmd.show("sticks", "active_site")</code></pre>
+
+<div class="socratic" data-question="select-1">
+<h4>Check Your Understanding</h4>
+<p>What does the selection <code>"protein and not hetero and chain A"</code> select?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> All protein atoms (not heteroatoms like ligands/water) in chain A. The <code>and</code> combines criteria; <code>not</code> excludes heteroatoms.</p>
+<p><strong>Misconceptions:</strong> "It selects everything in chain A including water." "<code>not</code> only works at the beginning." "<code>protein</code> includes nucleic acids."</p>
+</div>
+</div>
+
+<div class="socratic" data-question="select-2">
+<h4>Check Your Understanding</h4>
+<p>Why create a named selection with <code>cmd.select("active_site", "resi 10-20")</code> instead of just using the inline selection string?</p>
+<button onclick="toggleAnswer(this)">Show Answer</button>
+<div class="answer">
+<p><strong>Answer:</strong> Named selections persist, can be reused across commands, appear in the GUI panel for interactive clicking, and make scripts more readable. Inline selections are re-evaluated each time.</p>
+<p><strong>Misconceptions:</strong> "Named selections are faster to evaluate." "Inline selections can't be used with color/show." "Named selections are saved to the session file automatically."</p>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Scene Navigation</h2>
+
+<h3>Programmatic camera control</h3>
+<pre><code class="language-python">cmd.center("object")           # center on object
+cmd.center("selection")        # center on selection
+cmd.orient("object")           # center + zoom to fit
+cmd.zoom("selection", 5.0)     # zoom on selection, 5Å buffer
+
+# Specific view
+cmd.set_view([...])            # 18-element view matrix
+view = cmd.get_view()          # save current view
+cmd.set_view(view)             # restore view</code></pre>
+
+<h3>Rotation and animation</h3>
+<pre><code class="language-python">cmd.rotate("y", 90)            # rotate 90° around Y axis
+cmd.rotate("x", -30, "object") # rotate object only
+cmd.mset("1 x100")             # movie: 100 frames
+cmd.mplay()                    # play movie</code></pre>
+</section>
+
+<section>
+<h2>Getting Information</h2>
+<pre><code class="language.python">
+# Object info
+cmd.get_names("objects")       # all object names
+cmd.count_atoms("selection")   # atom count
+cmd.get_model("object")        # low-level model data
+
+# Coordinates
+cmd.get_coords("selection")    # Nx3 array of coordinates
+cmd.get_area("selection")      # solvent accessible surface area
+
+# Distances/angles
+cmd.distance("dist_name", "sel1", "sel2")  # create distance object
+cmd.get_distance("sel1", "sel2")           # just the value
+
+# Symmetry
+cmd.get_symmetry("object")     # crystal symmetry info</code></pre>
+</section>
+
+<section>
+<h2>Cleanup Commands</h2>
+<pre><code class="language.python">
+cmd.delete("object")           # remove object
+cmd.delete("all")              # clear everything
+cmd.reinitialize()             # full reset (keeps settings)
+cmd.reset()                    # reset view only</code></pre>
+</section>
+
+<section>
+<h2>Summary</h2>
+<ul>
+<li><code>load</code>/<code>fetch</code> bring structures in; <code>delete</code> removes them</li>
+<li><code>show</code>/<code>hide</code> control representations; combine for effect</li>
+<li><code>color</code>/<code>spectrum</code>/<code>util.cbc</code> handle coloring</li>
+<li>Selections (<code>"chain A and resi 10-20"</code>) target specific parts</li>
+<li><code>center</code>/<code>orient</code>/<code>zoom</code>/<code>rotate</code> control the camera</li>
+</ul>
+</section>
+
+<div class="lesson-nav">
+<a href="lesson1.html">← Lesson 1: The Prompt</a>
+<a href="lesson3.html">Lesson 3: Scripting Basics →</a>
+</div>
+</main>
+
+<footer>
+<p>Part of the OSU LLM Workshop — <a href="https://github.com/MooersLab/osu-llm-workshop" target="_blank">GitHub Repository</a></p>
+</footer>
+
+<script src="socratic.js" defer></script>
+</body>
+</html>
